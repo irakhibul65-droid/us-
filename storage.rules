@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function hasPrivateContentAccess() {
+      return request.auth != null
+        && request.auth.uid in [
+          'REPLACE_WITH_OWNER_UID',
+          'REPLACE_WITH_SALEMA_UID'
+        ];
+    }
+
+    function isExpectedPhoto(fileName) {
+      return fileName in [
+        'celebration.jpg',
+        'wedding-bouquet.jpg',
+        'golden-hour.jpg',
+        'love-sign.jpg'
+      ];
+    }
+
+    match /private/photos/{fileName} {
+      allow read: if hasPrivateContentAccess() && isExpectedPhoto(fileName);
+      allow create, update: if hasPrivateContentAccess() && isExpectedPhoto(fileName)
+        && request.resource.size > 0
+        && request.resource.size <= 15728640
+        && request.resource.contentType != null
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    match /voice-notes/private/voice-note {
+      allow read: if hasPrivateContentAccess();
+      allow create, update: if hasPrivateContentAccess()
+        && request.resource.size > 0
+        && request.resource.size <= 26214400
+        && request.resource.contentType != null
+        && request.resource.contentType.matches('audio/.*');
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

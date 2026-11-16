@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthorizedUser() {
+      return request.auth != null
+        && request.auth.uid in [
+          'qchrZlfJ6gftN2jnEtzpO87rA8q1'
+          'pHns9QivdgUPu7DfAB2RqI3BkOO2'
+        ];
+    }
+
+    match /private/{document=**} {
+      allow read: if isAuthorizedUser();
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
